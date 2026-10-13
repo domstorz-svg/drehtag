@@ -585,7 +585,7 @@ let SRF=null;
 async function srfChips(){if(!SRF){SRF=[];try{const xs=await Promise.allSettled(['1890','1646'].map(id=>fetch('https://www.srf.ch/news/bnf/rss/'+id).then(r=>r.ok?r.text():'')));
   const gesehen=new Set();for(const x of xs){if(x.status!=='fulfilled'||!x.value)continue;const d=new DOMParser().parseFromString(x.value,'text/xml');
    for(const it of d.querySelectorAll('item > title')){const t=it.textContent.trim();if(!t||gesehen.has(t))continue;gesehen.add(t);SRF.push(t)}}}catch(e){}}
- const L=SRF.slice(0,8);$('#vsSrf').hidden=!L.length;
+ const L=SRF.slice(0,5);$('#vsSrf').hidden=!L.length;
  $('#chSrf').innerHTML=L.map((t,i)=>{const[a,b]=t.split(/\s+–\s+/);return`<button class="chip srf" data-i="${i}" title="${esc(t)}"><i>SRF</i>${esc(b?a+' · '+b:a)}</button>`}).join('');
  $$('#chSrf .chip').forEach(b=>b.onclick=()=>{const t=L[+b.dataset.i];const ta=$('#thema');ta.value=t.split(/\s+–\s+/)[0];ta.focus()})}
 $('#frLos').onclick=()=>frageZu($('#thema').value);
