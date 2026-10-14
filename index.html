@@ -213,6 +213,27 @@ input[type=checkbox]{accent-color:var(--acc)}
 .karte.leise{background:rgba(255,180,160,.08)}.karte.leise .kakadu{font:500 15px var(--sans);color:var(--warn)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:820px){.sp{grid-template-columns:1fr}#spText{max-height:30vh}header{flex-wrap:wrap}#lauf{min-width:0}}
+
+/* EINFACH-Ansicht */
+body.einfach #willkommen>svg,body.einfach #willkommen .sub,body.einfach #wDateien,body.einfach #bereit{display:none!important}
+body.einfach #wzone{min-height:46vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+body.einfach #wzone .wurf{font-size:34px}
+.ethema{display:none}body.einfach .ethema{display:block;width:min(720px,92vw);margin:22px auto 0;font:inherit;font-size:20px;padding:16px 20px;border-radius:16px;border:1px solid var(--line);background:var(--panel);color:inherit}
+#einfach,#eMehr{display:none}
+body.einfach #einfach{display:block;max-width:900px;margin:40px auto;padding:0 16px}
+#eMehr{margin-left:auto;font-size:16px}
+header #eMehr,body.einfach header #eMehr{display:inline-block}
+body.einfach #uebersicht,body.einfach #treffer,body.einfach #suche,body.einfach #lauf,body.einfach #merkKnopf,body.einfach #themaPill{display:none!important}
+#eSatz{font-size:28px;text-align:center;margin:60px 0 22px}
+.ebalken{height:22px;border-radius:11px;background:var(--line);overflow:hidden}.ebalken i{display:block;height:100%;width:0;background:var(--akzent,#7c6cff);transition:width .6s}
+#eErgebnis h2{font-size:26px;margin:34px 0 14px}
+.eot{display:flex;align-items:center;gap:12px;padding:14px 16px;margin:8px 0;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.eot q{flex:1;font-size:18px;line-height:1.4}.edauer{opacity:.7;white-space:nowrap}
+.ebilder{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.ebild{border-radius:14px;overflow:hidden;background:var(--panel);border:1px solid var(--line)}.ebild img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}.ebild div{display:flex;justify-content:center;gap:10px;padding:8px}
+.eexport{display:block;width:100%;margin:40px 0 8px;font-size:24px;padding:22px}.eexport:disabled{opacity:.45}
+.ehinweis{text-align:center}
+body.einfach:not(.eexp) #tanz{display:none!important}
 </style></head><body>
 
 <svg width="0" height="0" style="position:absolute"><defs>
@@ -1691,6 +1712,45 @@ async function offlineInstallieren(files){const man=files.find(f=>/drehtag-offli
  try{await navigator.storage?.persist?.()}catch(e){}tanzStopp(`Offline-Paket eingerichtet · ${gb(bytes)} · ab jetzt ohne Internet`);setTimeout(()=>location.reload(),2800);return true}
 // Ein Ordner mit drehtag-offline.json ist kein Drehtag, sondern das Paket
 const _neuVorOffline=neu;neu=function(files){if(files.some(f=>/drehtag-offline\.json$/i.test(f.name))){offlineInstallieren(files);return}_neuVorOffline(files)};
+// ================= EINFACH-ANSICHT (Standard): Ordner + Thema → ein Satz und ein Balken → 3 Blöcke. Alles andere hinter «Mehr ▾».
+// Nichts Neues: nur weglassen und umordnen. Quellenschutz unverändert.
+let EINFACH=true;try{EINFACH=localStorage.getItem('drehtag_einfach')!=='aus'}catch(e){}
+document.body.classList.toggle('einfach',EINFACH);
+// Start: ein grosses Feld + Themenfeld
+(()=>{const z=$('#wzone');z.querySelector('.wurf').textContent='Ordner hier hineinziehen';z.querySelector('.klein').textContent='oder hier klicken · nichts wird hochgeladen';
+ z.insertAdjacentHTML('afterend',`<input id="eThema" class="ethema" maxlength="200" placeholder="Worum geht es? Zum Beispiel: Dorfschule soll schliessen" aria-label="Thema des Beitrags">`);
+ $('#eThema').addEventListener('click',e=>e.stopPropagation());$('#eThema').addEventListener('keydown',e=>e.stopPropagation());
+ document.querySelector('main').insertAdjacentHTML('afterbegin',`<section id="einfach" aria-live="polite"><div id="eArbeit"><p id="eSatz">Ich schaue mir alles an …</p><div class="ebalken"><i id="eBalken"></i></div></div><div id="eErgebnis" hidden></div></section>`);
+ document.querySelector('header').insertAdjacentHTML('beforeend','<button id="eMehr" aria-expanded="false">Mehr ▾</button>');
+ $('#eMehr').onclick=()=>{EINFACH=!EINFACH;document.body.classList.toggle('einfach',EINFACH);$('#eMehr').textContent=EINFACH?'Mehr ▾':'Einfach ▴';$('#eMehr').setAttribute('aria-expanded',String(!EINFACH));try{localStorage.setItem('drehtag_einfach',EINFACH?'an':'aus')}catch(e){}zeichne()};
+ $('#eMehr').textContent=EINFACH?'Mehr ▾':'Einfach ▴'})();
+// Kein Zwischenschritt: sobald der Ordner drin ist, geht es los (mit dem Thema aus dem Feld)
+const _zeigeBereitE=zeigeBereit;zeigeBereit=function(){if(!EINFACH)return _zeigeBereitE();if(!CLIPS.length)return;GESTARTET=true;try{ac()}catch(e){}$('#willkommen').classList.add('weg');starte();frageZu($('#eThema').value||'')};
+const _frageZeigenE=frageZeigen;frageZeigen=function(){if(EINFACH)return;_frageZeigenE()};
+// Anzeigenamen ohne IDs oder Prüfsummen
+function anzeigeName(c){const n=c.name.replace(/\.[^.]+$/,'');if(/^[0-9a-f]{8,}|[0-9a-f]{8}-[0-9a-f]{4}-/i.test(n)||/^[A-Z0-9]{12,}$/.test(n))return'Clip '+(CLIPS.indexOf(c)+1);return n.replace(/[_]+/g,' ')}
+// Ein Satz und ein Balken
+function einfachLauf(){const b=LAUF.blitz,t=LAUF.ton;let s='Ich schaue mir alles an …',p=0;
+ if(b&&b.fertig<b.alle){s=`Ich schaue mir deine Bilder an … ${b.fertig} von ${b.alle}`;p=b.fertig/b.alle*0.2}
+ else if(t&&t.modell){s='Ich mache mich bereit zum Zuhören …';p=0.2}
+ else if(t&&t.fertig<t.alle){const r=t.rest?Math.max(1,Math.round(t.rest/60)):null;s=`Ich höre zu …${r?` noch ca. ${r} min`:''}`;p=0.2+0.8*t.fertig/Math.max(1,t.alle)}
+ else if(t&&t.fehler){s='Zuhören geht hier nicht. Die Bilder sind trotzdem da.';p=1}
+ else if(CLIPS.length&&CLIPS.every(c=>c.ok!==null)&&(!t||t.fertig>=t.alle)){s='Fertig.';p=1}
+ $('#eSatz').textContent=s;$('#eBalken').style.width=Math.round(p*100)+'%';return p>=1}
+const _laufE=lauf;lauf=function(){_laufE();if(GESTARTET)einfachZeigen()};
+// Ergebnis: genau 3 Blöcke
+function einfachZeigen(){if(!$('#einfach'))return;const fertig=einfachLauf();$('#eArbeit').hidden=fertig;const E=$('#eErgebnis');E.hidden=!fertig;if(!fertig)return;
+ const ots=[...OT].filter(o=>o.b-o.a<=30).sort((x,y)=>(y.wahl-x.wahl)||((y.pp??y.p)-(x.pp??x.p))).slice(0,5),bil=BEST.slice(0,8);
+ const sek=x=>`${Math.max(1,Math.round(x))} s`;
+ E.innerHTML=`<h2>Die besten O-Töne</h2>${ots.length?ots.map((o,i)=>`<div class="eot"><q>${esc(o.t)}</q><span class="edauer">${sek(o.b-o.a)}</span><button class="ic" data-ep="o${i}" aria-label="abspielen">▶</button><button class="ic stern ${gemerkt(o.c,o.a,o.b)?'an':''}" data-es="o${i}" aria-label="merken">★</button></div>`).join(''):'<p class="mut">Keine klaren O-Töne gefunden.</p>'}
+  <h2>Die besten Bilder</h2><div class="ebilder">${bil.length?bil.map((x,i)=>`<div class="ebild"><img src="${x.b.url}" alt="Bild aus ${esc(anzeigeName(x.c))}"><div><button class="ic" data-ep="b${i}" aria-label="abspielen">▶</button><button class="ic stern ${gemerkt(x.c,x.b.t-3,x.b.t+3)?'an':''}" data-es="b${i}" aria-label="merken">★</button></div></div>`).join(''):'<p class="mut">Keine Bilder.</p>'}</div>
+  <button class="pri eexport" id="eExport" ${MERK.length?'':'disabled'}>Merkliste exportieren${MERK.length?` (${MERK.length})`:''}</button><p class="mut ehinweis">${MERK.length?'Deine Originale bleiben unverändert. Weitergeben nur über SRF-erlaubte Wege.':'Wähle zuerst mit ★ aus, was du willst.'}</p>`;
+ const el=k=>k[0]==='o'?{c:ots[+k.slice(1)].c,a:ots[+k.slice(1)].a,b:ots[+k.slice(1)].b,t:titelAus(ots[+k.slice(1)].t)}:(x=>({c:x.c,a:Math.max(0,x.b.t-3),b:Math.min(x.c.dauer,x.b.t+3),t:'Bild '+anzeigeName(x.c)}))(bil[+k.slice(1)]);
+ $$('#eErgebnis [data-ep]').forEach(b=>b.onclick=()=>{const x=el(b.dataset.ep);oeffne(x.c,x.a,[x.a,x.b])});
+ $$('#eErgebnis [data-es]').forEach(b=>b.onclick=()=>{const x=el(b.dataset.es);const i=MERK.findIndex(m=>m.c===x.c&&m.a<x.b-0.5&&m.b>x.a+0.5);if(i>=0){MERK.splice(i,1);zeigeMerk()}else merke(x.c,x.a,x.b,x.t);einfachZeigen()});
+ $('#eExport').onclick=async()=>{document.body.classList.add('eexp');try{await exportiere(true)}finally{document.body.classList.remove('eexp')}}}
+const _zeichneE=zeichne;zeichne=function(){_zeichneE();if(GESTARTET)einfachZeigen()};
+
 // </W20-PROTOKOLL>
 
 // (Test-Haken für die Endfassung entfernt)
